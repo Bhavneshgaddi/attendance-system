@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EduTrack – College Attendance Management</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --sidebar-w: 240px;
+    --topbar-h: 60px;
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --accent: #06b6d4;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --surface2: #f1f5f9;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --border: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 24px rgba(79,70,229,.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --transition: .2s cubic-bezier(.4,0,.2,1);
+  }
+  [data-theme="dark"] {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #263146;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --border: #334155;
+    --primary-light: #1e1b4b;
+    --shadow: 0 1px 3px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.2);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); transition: background var(--transition), color var(--transition); min-height: 100vh; }
+  /* LAYOUT */
+  #app-shell { display: flex; min-height: 100vh; }
+  #sidebar { width: var(--sidebar-w); background: var(--surface); border-right: 1px solid var(--border); position: fixed; top: 0; left: 0; height: 100vh; display: flex; flex-direction: column; z-index: 100; transition: transform var(--transition); overflow-y: auto; }
+  #sidebar.collapsed { transform: translateX(calc(-1 * var(--sidebar-w))); }
+  #main { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left var(--transition); }
+  #main.expanded { margin-left: 0; }
+  #topbar { height: var(--topbar-h); background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 1.5rem; gap: 1rem; position: sticky; top: 0; z-index: 50; }
+  #content { flex: 1; padding: 1.5rem; }
+  /* SIDEBAR ELEMENTS */
+  .sidebar-brand { padding: 1.25rem 1.25rem 1rem; border-bottom: 1px solid var(--border); }
+  .brand-logo { display: flex; align-items: center; gap: .75rem; }
+  .brand-icon { width: 36px; height: 36px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 16px; }
+  .brand-name { font-size: 16px; font-weight: 700; color: var(--text); }
+  .brand-sub { font-size: 10px; color: var(--text3); letter-spacing: .06em; text-transform: uppercase; }
+  .nav-section { padding: .75rem 1rem .5rem; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; margin-bottom: .5rem; padding-left: .5rem; }
+  .nav-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .75rem; border-radius: var(--radius-sm); cursor: pointer; color: var(--text2); font-size: 13.5px; font-weight: 500; transition: all var(--transition); margin-bottom: 2px; position: relative; }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: var(--primary-light); color: var(--primary); }
+  .nav-item .icon { width: 18px; text-align: center; font-size: 14px; }
+  .nav-item .badge { margin-left: auto; background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; }
+  .nav-item .badge.success { background: var(--success); }
+  .sidebar-footer { margin-top: auto; border-top: 1px solid var(--border); padding: 1rem; }
+  .user-mini { display: flex; align-items: center; gap: .75rem; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .avatar.sm { width: 28px; height: 28px; font-size: 11px; }
+  .avatar.lg { width: 56px; height: 56px; font-size: 20px; }
+  .avatar.xl { width: 80px; height: 80px; font-size: 28px; }
+  /* TOPBAR */
+  .topbar-toggle { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; padding: 6px; border-radius: var(--radius-sm); transition: background var(--transition); }
+  .topbar-toggle:hover { background: var(--surface2); }
+  .breadcrumb-bar { flex: 1; }
+  .page-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .page-sub { font-size: 12px; color: var(--text3); }
+  .topbar-actions { display: flex; align-items: center; gap: .5rem; margin-left: auto; }
+  .icon-btn { width: 36px; height: 36px; border-radius: var(--radius-sm); background: none; border: 1px solid var(--border); color: var(--text2); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: all var(--transition); position: relative; }
+  .icon-btn:hover { background: var(--surface2); color: var(--text); }
+  .notif-dot { position: absolute; top: 6px; right: 6px; width: 7px; height: 7px; background: var(--danger); border-radius: 50%; border: 1.5px solid var(--surface); }
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  .card-header-custom { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-header-custom h6 { font-size: 14px; font-weight: 600; color: var(--text); margin: 0; }
+  .card-body-custom { padding: 1.25rem; }
+  /* STAT CARDS */
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; position: relative; overflow: hidden; transition: transform var(--transition); }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .stat-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: .75rem; }
+  .stat-value { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+  .stat-label { font-size: 12px; color: var(--text3); margin-top: 4px; font-weight: 500; }
+  .stat-change { font-size: 11.5px; margin-top: .5rem; display: flex; align-items: center; gap: 4px; }
+  .stat-change.up { color: var(--success); }
+  .stat-change.down { color: var(--danger); }
+  .stat-bar { height: 4px; border-radius: 99px; background: var(--border); margin-top: .75rem; overflow: hidden; }
+  .stat-bar-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+  /* TABLE */
+  .table-custom { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .table-custom th { text-align: left; padding: .6rem 1rem; font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: .06em; text-transform: uppercase; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .table-custom td { padding: .75rem 1rem; border-bottom: 1px solid var(--border); color: var(--text2); vertical-align: middle; }
+  .table-custom tr:last-child td { border-bottom: none; }
+  .table-custom tr:hover td { background: var(--surface2); }
+  /* BADGES */
+  .badge-custom { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+  .badge-success { background: #d1fae5; color: #065f46; }
+  .badge-danger { background: #fee2e2; color: #991b1b; }
+  .badge-warning { background: #fef3c7; color: #92400e; }
+  .badge-info { background: #e0f2fe; color: #075985; }
+  .badge-primary { background: #eef2ff; color: #3730a3; }
+  [data-theme="dark"] .badge-success { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .badge-danger { background: #7f1d1d; color: #fca5a5; }
+  [data-theme="dark"] .badge-warning { background: #78350f; color: #fde68a; }
+  [data-theme="dark"] .badge-info { background: #0c4a6e; color: #7dd3fc; }
+  [data-theme="dark"] .badge-primary { background: #1e1b4b; color: #a5b4fc; }
+  /* PROGRESS */
+  .progress-custom { height: 8px; border-radius: 99px; background: var(--border); overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 99px; transition: width 1s ease; }
+  /* TOGGLE SWITCH */
+  .toggle-switch { position: relative; width: 46px; height: 24px; cursor: pointer; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track { position: absolute; inset: 0; background: var(--border); border-radius: 99px; transition: background var(--transition); }
+  .toggle-thumb { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: #fff; border-radius: 50%; transition: transform var(--transition); box-shadow: 0 1px 4px rgba(0,0,0,.2); }
+  .toggle-switch input:checked ~ .toggle-track { background: var(--primary); }
+  .toggle-switch input:checked ~ .toggle-thumb { transform: translateX(22px); }
+  /* ATTENDANCE TOGGLE */
+  .att-toggle { display: flex; border-radius: 99px; overflow: hidden; border: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+  .att-toggle span { padding: 4px 14px; cursor: pointer; transition: all var(--transition); }
+  .att-present { background: var(--success); color: #fff; }
+  .att-absent { background: var(--danger); color: #fff; }
+  /* FORM */
+  .form-control-custom { background: var(--surface); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); padding: .5rem .75rem; font-size: 13.5px; width: 100%; transition: border var(--transition); outline: none; }
+  .form-control-custom:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+  .form-label-custom { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: .04em; }
+  /* BUTTONS */
+  .btn-primary-custom { background: var(--primary); color: #fff; border: none; border-radius: var(--radius-sm); padding: .55rem 1.25rem; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all var(--transition); display: inline-flex; align-items: center; gap: .5rem; }
+  .btn-primary-custom:hover { background: var(--primary-dark); transform: translateY(-1px); }
+  .btn-secondary-custom { background: var(--surface2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .55rem 1.25rem; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all var(--transition); display: inline-flex; align-items: center; gap: .5rem; }
+  .btn-secondary-custom:hover { background: var(--border); }
+  .btn-danger-custom { background: var(--danger); color: #fff; border: none; border-radius: var(--radius-sm); padding: .45rem 1rem; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+  .btn-danger-custom:hover { opacity: .85; }
+  /* TOAST */
+  #toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 9999; display: flex; flex-direction: column; gap: .5rem; }
+  .toast-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: .75rem 1rem; font-size: 13px; display: flex; align-items: center; gap: .75rem; box-shadow: var(--shadow-md); min-width: 280px; animation: slideIn .3s ease; }
+  .toast-item.success { border-left: 4px solid var(--success); }
+  .toast-item.error { border-left: 4px solid var(--danger); }
+  .toast-item.info { border-left: 4px solid var(--accent); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  /* LOADER */
+  .skeleton { background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .spinner { width: 20px; height: 20px; border: 2.5px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* CIRCULAR PROGRESS */
+  .circ-progress { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+  .circ-progress svg { transform: rotate(-90deg); }
+  .circ-center { position: absolute; text-align: center; }
+  /* LOGIN */
+  #login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: var(--shadow-md); }
+  .role-tab { padding: .5rem 1rem; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; font-weight: 600; border: 1px solid var(--border); background: var(--surface2); color: var(--text2); transition: all var(--transition); }
+  .role-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+  /* CALENDAR */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-cell { aspect-ratio: 1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; cursor: pointer; transition: all var(--transition); }
+  .cal-cell:hover { background: var(--surface2); }
+  .cal-cell.present { background: #d1fae5; color: #065f46; }
+  .cal-cell.absent { background: #fee2e2; color: #991b1b; }
+  .cal-cell.today { border: 2px solid var(--primary); }
+  .cal-cell.empty { opacity: 0; cursor: default; }
+  [data-theme="dark"] .cal-cell.present { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .cal-cell.absent { background: #7f1d1d; color: #fca5a5; }
+  /* SEARCH */
+  .search-box { position: relative; }
+  .search-box input { padding-left: 2.2rem; }
+  .search-icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 13px; }
+  /* SCHEDULE */
+  .schedule-item { display: flex; gap: 1rem; padding: .75rem 0; border-bottom: 1px solid var(--border); }
+  .schedule-item:last-child { border-bottom: none; }
+  .schedule-time { font-size: 12px; color: var(--text3); font-weight: 600; white-space: nowrap; min-width: 70px; }
+  .schedule-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 3px; }
+  .schedule-info h6 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 2px; }
+  .schedule-info p { font-size: 12px; color: var(--text3); margin: 0; }
+  /* NOTIF */
+  .notif-item { padding: .75rem; border-radius: var(--radius-sm); background: var(--surface2); margin-bottom: .5rem; display: flex; gap: .75rem; cursor: pointer; transition: background var(--transition); }
+  .notif-item:hover { background: var(--border); }
+  .notif-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+  .notif-text { font-size: 12.5px; color: var(--text2); }
+  .notif-time { font-size: 11px; color: var(--text3); margin-top: 2px; }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+  /* Responsive */
+  @media (max-width: 768px) {
+    #sidebar { transform: translateX(calc(-1 * var(--sidebar-w))); }
+    #sidebar.mobile-open { transform: translateX(0); }
+    #main { margin-left: 0 !important; }
+    #content { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const { useState, useEffect, useRef, useCallback } = React;
+const h = React.createElement;
+
+/* ─── DUMMY DATA ─── */
+const STUDENTS = [
+  { id: 1, name: 'Aarav Sharma', roll: 'CS2101', class: 'CSE-A', email: 'aarav@edu.in', phone: '9876543210', photo: 'AS' },
+  { id: 2, name: 'Priya Mehta', roll: 'CS2102', class: 'CSE-A', email: 'priya@edu.in', phone: '9876543211', photo: 'PM' },
+  { id: 3, name: 'Rohan Gupta', roll: 'CS2103', class: 'CSE-A', email: 'rohan@edu.in', phone: '9876543212', photo: 'RG' },
+  { id: 4, name: 'Sneha Patel', roll: 'CS2104', class: 'CSE-A', email: 'sneha@edu.in', phone: '9876543213', photo: 'SP' },
+  { id: 5, name: 'Kiran Joshi', roll: 'CS2105', class: 'CSE-A', email: 'kiran@edu.in', phone: '9876543214', photo: 'KJ' },
+  { id: 6, name: 'Ananya Singh', roll: 'CS2106', class: 'CSE-B', email: 'ananya@edu.in', phone: '9876543215', photo: 'AN' },
+  { id: 7, name: 'Vikram Rao', roll: 'CS2107', class: 'CSE-B', email: 'vikram@edu.in', phone: '9876543216', photo: 'VR' },
+  { id: 8, name: 'Disha Kulkarni', roll: 'CS2108', class: 'CSE-B', email: 'disha@edu.in', phone: '9876543217', photo: 'DK' },
+];
+const SUBJECTS = [
+  { id: 1, name: 'Data Structures', code: 'CS301', credits: 4, teacher: 'Dr. Meena Roy' },
+  { id: 2, name: 'Operating Systems', code: 'CS302', credits: 3, teacher: 'Prof. Suresh Kumar' },
+  { id: 3, name: 'Database Systems', code: 'CS303', credits: 4, teacher: 'Dr. Anita Shah' },
+  { id: 4, name: 'Computer Networks', code: 'CS304', credits: 3, teacher: 'Prof. Ramesh Iyer' },
+  { id: 5, name: 'Software Engineering', code: 'CS305', credits: 3, teacher: 'Dr. Pooja Verma' },
+];
+const generateAttendance = () => {
+  const data = {};
+  STUDENTS.forEach(s => {
+    data[s.id] = {};
+    SUBJECTS.forEach(sub => {
+      const total = 30 + Math.floor(Math.random() * 10);
+      const attended = Math.floor(total * (0.6 + Math.random() * 0.38));
+      data[s.id][sub.id] = { total, attended };
+    });
+  });
+  return data;
+};
+const ATTENDANCE_DATA = generateAttendance();
+const SCHEDULE = [
+  { time: '08:00 AM', subject: 'Data Structures', room: 'Room 101', color: '#4f46e5' },
+  { time: '10:00 AM', subject: 'Operating Systems', room: 'Room 203', color: '#06b6d4' },
+  { time: '12:00 PM', subject: 'Lunch Break', room: '—', color: '#f59e0b' },
+  { time: '02:00 PM', subject: 'Database Systems', room: 'Lab 04', color: '#10b981' },
+  { time: '04:00 PM', subject: 'Computer Networks', room: 'Room 305', color: '#ef4444' },
+];
+const NOTIFICATIONS = [
+  { icon: 'fa-exclamation-triangle', color: '#ef4444', bg: '#fee2e2', msg: 'Attendance below 75% in OS', time: '2 min ago' },
+  { icon: 'fa-calendar-check', color: '#10b981', bg: '#d1fae5', msg: 'Attendance marked for CS301', time: '1 hr ago' },
+  { icon: 'fa-bell', color: '#f59e0b', bg: '#fef3c7', msg: 'Exam schedule published', time: '3 hrs ago' },
+  { icon: 'fa-user-plus', color: '#4f46e5', bg: '#eef2ff', msg: 'New student enrolled: Disha K.', time: 'Today' },
+];
+const WEEKLY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKLY_PRESENT = [85, 92, 78, 88, 95, 70];
+const WEEKLY_ABSENT = [15, 8, 22, 12, 5, 30];
+const COLORS = ['#4f46e5','#06b6d4','#10b981','#f59e0b','#ef4444'];
+
+const USERS = {
+  student: { name: 'Aarav Sharma', role: 'Student', email: 'aarav@edu.in', initials: 'AS', id: 1 },
+  teacher: { name: 'Dr. Meena Roy', role: 'Teacher', email: 'meena@edu.in', initials: 'MR' },
+  admin: { name: 'Admin User', role: 'Admin', email: 'admin@edu.in', initials: 'AU' },
+};
+
+/* ─── TOAST SYSTEM ─── */
+let toastId = 0;
+function showToast(msg, type = 'success') {
+  const id = ++toastId;
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast-item ${type}`;
+  el.innerHTML = `<i class="fas ${type==='success'?'fa-check-circle':type==='error'?'fa-times-circle':'fa-info-circle'}" style="color:${type==='success'?'#10b981':type==='error'?'#ef4444':'#06b6d4'}"></i><span style="color:var(--text)">${msg}</span>`;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(100%)'; el.style.transition = '.3s ease'; setTimeout(() => el.remove(), 300); }, 3000);
+}
+
+/* ─── CIRCULAR PROGRESS ─── */
+function CircProgress({ pct, size=80, stroke=7, color='#4f46e5' }) {
+  const r = (size - stroke * 2) / 2;
+  const circ = 2 * Math.PI * r;
+  const fill = circ - (pct / 100) * circ;
+  return h('div', { className: 'circ-progress', style: { width: size, height: size } },
+    h('svg', { width: size, height: size },
+      h('circle', { cx: size/2, cy: size/2, r, fill: 'none', stroke: 'var(--border)', strokeWidth: stroke }),
+      h('circle', { cx: size/2, cy: size/2, r, fill: 'none', stroke: color, strokeWidth: stroke, strokeDasharray: circ, strokeDashoffset: fill, strokeLinecap: 'round', style: { transition: 'stroke-dashoffset 1s ease' } })
+    ),
+    h('div', { className: 'circ-center' },
+      h('div', { style: { fontSize: size > 70 ? 16 : 12, fontWeight: 700, color: 'var(--text)' } }, pct + '%'),
+    )
+  );
+}
+
+/* ─── STAT CARD ─── */
+function StatCard({ icon, label, value, change, changeUp, barPct, barColor, iconBg }) {
+  return h('div', { className: 'stat-card' },
+    h('div', { className: 'stat-icon', style: { background: iconBg || '#eef2ff' } },
+      h('i', { className: 'fas ' + icon, style: { color: barColor || '#4f46e5' } })
+    ),
+    h('div', { className: 'stat-value' }, value),
+    h('div', { className: 'stat-label' }, label),
+    change && h('div', { className: 'stat-change ' + (changeUp ? 'up' : 'down') },
+      h('i', { className: 'fas ' + (changeUp ? 'fa-arrow-up' : 'fa-arrow-down') }),
+      h('span', null, change)
+    ),
+    barPct !== undefined && h('div', null,
+      h('div', { className: 'stat-bar', style: { marginTop: '.75rem' } },
+        h('div', { className: 'stat-bar-fill', style: { width: barPct + '%', background: barColor || '#4f46e5' } })
+      )
+    )
+  );
+}
+
+/* ─── WEEKLY CHART ─── */
+function WeeklyChart() {
+  const canvasRef = useRef();
+  const chartRef = useRef();
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'bar',
+      data: {
+        labels: WEEKLY_LABELS,
+        datasets: [
+          { label: 'Present', data: WEEKLY_PRESENT, backgroundColor: '#4f46e5', borderRadius: 6, borderSkipped: false },
+          { label: 'Absent', data: WEEKLY_ABSENT, backgroundColor: '#ef4444', borderRadius: 6, borderSkipped: false },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: isDark ? '#94a3b8' : '#94a3b8', font: { size: 11 } }, border: { display: false } },
+          y: { grid: { color: isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)' }, ticks: { color: isDark ? '#94a3b8' : '#94a3b8', font: { size: 11 } }, border: { display: false } }
+        }
+      }
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, []);
+  return h('div', null,
+    h('div', { style: { display: 'flex', gap: 16, marginBottom: 12, fontSize: 12, color: 'var(--text3)' } },
+      h('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } },
+        h('span', { style: { width: 10, height: 10, borderRadius: 2, background: '#4f46e5', display: 'inline-block' } }), 'Present'
+      ),
+      h('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } },
+        h('span', { style: { width: 10, height: 10, borderRadius: 2, background: '#ef4444', display: 'inline-block' } }), 'Absent'
+      ),
+    ),
+    h('div', { style: { position: 'relative', height: 200 } },
+      h('canvas', { ref: canvasRef, 'aria-label': 'Weekly attendance bar chart', role: 'img' })
+    )
+  );
+}
+
+/* ─── SUBJECT DONUT ─── */
+function SubjectDonut({ studentId }) {
+  const canvasRef = useRef();
+  const chartRef = useRef();
+  useEffect(() => {
+    if (chartRef.current) chartRef.current.destroy();
+    const vals = SUBJECTS.map(s => {
+      const att = ATTENDANCE_DATA[studentId]?.[s.id] || { attended: 0, total: 1 };
+      return Math.round((att.attended / att.total) * 100);
+    });
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'doughnut',
+      data: {
+        labels: SUBJECTS.map(s => s.name.split(' ')[0]),
+        datasets: [{ data: vals, backgroundColor: COLORS, borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '70%',
+        plugins: { legend: { display: false } }
+      }
+    });
+    return () => chartRef.current && chartRef.current.destroy();
+  }, [studentId]);
+  return h('div', { style: { position: 'relative', height: 160 } },
+    h('canvas', { ref: canvasRef, 'aria-label': 'Subject-wise attendance donut chart', role: 'img' })
+  );
+}
+
+/* ─── PAGES ─── */
+
+function LoginPage({ onLogin }) {
+  const [role, setRole] = useState('student');
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
+  const creds = { student: ['student', 'pass123'], teacher: ['teacher', 'pass123'], admin: ['admin', 'pass123'] };
+  function handle() {
+    setErr('');
+    const [eu, ep] = creds[role];
+    if (user !== eu || pass !== ep) { setErr('Invalid credentials. Try: ' + eu + ' / pass123'); return; }
+    setLoading(true);
+    setTimeout(() => { setLoading(false); onLogin(role); }, 1200);
+  }
+  return h('div', { id: 'login-page' },
+    h('div', { className: 'login-card' },
+      h('div', { style: { textAlign: 'center', marginBottom: '1.5rem' } },
+        h('div', { style: { width: 52, height: 52, background: '#4f46e5', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', color: '#fff', fontSize: 24 } },
+          h('i', { className: 'fas fa-graduation-cap' })
+        ),
+        h('h4', { style: { fontWeight: 700, color: 'var(--text)', marginBottom: 4 } }, 'EduTrack'),
+        h('p', { style: { fontSize: 13, color: 'var(--text3)' } }, 'College Attendance Management System')
+      ),
+      h('div', { style: { display: 'flex', gap: 8, marginBottom: '1.25rem' } },
+        ['student', 'teacher', 'admin'].map(r =>
+          h('button', { key: r, className: 'role-tab' + (role === r ? ' active' : ''), onClick: () => setRole(r), style: { flex: 1 } },
+            h('i', { className: 'fas ' + (r === 'student' ? 'fa-user-graduate' : r === 'teacher' ? 'fa-chalkboard-teacher' : 'fa-user-shield'), style: { marginRight: 5 } }),
+            r.charAt(0).toUpperCase() + r.slice(1)
+          )
+        )
+      ),
+      h('div', { style: { marginBottom: '1rem' } },
+        h('label', { className: 'form-label-custom' }, 'Username'),
+        h('input', { className: 'form-control-custom', placeholder: 'Enter username', value: user, onChange: e => setUser(e.target.value) })
+      ),
+      h('div', { style: { marginBottom: '1.25rem' } },
+        h('label', { className: 'form-label-custom' }, 'Password'),
+        h('input', { className: 'form-control-custom', type: 'password', placeholder: 'Enter password', value: pass, onChange: e => setPass(e.target.value), onKeyDown: e => e.key === 'Enter' && handle() })
+      ),
+      err && h('div', { style: { background: '#fee2e2', color: '#991b1b', padding: '.6rem .75rem', borderRadius: 8, fontSize: 12.5, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: 8 } },
+        h('i', { className: 'fas fa-exclamation-circle' }), err
+      ),
+      h('button', { className: 'btn-primary-custom', style: { width: '100%', justifyContent: 'center' }, onClick: handle, disabled: loading },
+        loading ? h('span', { className: 'spinner' }) : null,
+        loading ? 'Authenticating...' : 'Sign In'
+      ),
+      h('p', { style: { textAlign: 'center', marginTop: '1rem', fontSize: 12, color: 'var(--text3)' } }, 'Demo: use role name as username, pass123 as password')
+    )
+  );
+}
+
+function Dashboard({ role, userId }) {
+  const student = STUDENTS.find(s => s.id === userId) || STUDENTS[0];
+  const attPcts = SUBJECTS.map(s => {
+    const a = ATTENDANCE_DATA[student.id]?.[s.id] || { attended: 0, total: 1 };
+    return Math.round((a.attended / a.total) * 100);
+  });
+  const overall = Math.round(attPcts.reduce((a,b) => a+b, 0) / attPcts.length);
+  const totalClasses = SUBJECTS.reduce((sum, s) => sum + (ATTENDANCE_DATA[student.id]?.[s.id]?.total || 0), 0);
+  const attended = SUBJECTS.reduce((sum, s) => sum + (ATTENDANCE_DATA[student.id]?.[s.id]?.attended || 0), 0);
+  const lowCount = attPcts.filter(p => p < 75).length;
+  return h('div', null,
+    h('div', { style: { marginBottom: '1.5rem' } },
+      h('h5', { style: { fontWeight: 700, color: 'var(--text)', marginBottom: 4 } }, 'Welcome back, ' + (role === 'student' ? student.name : USERS[role].name) + ' 👋'),
+      h('p', { style: { fontSize: 13, color: 'var(--text3)' } }, new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }))
+    ),
+    h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: '1.5rem' } },
+      h(StatCard, { icon: 'fa-chart-pie', label: 'Overall Attendance', value: overall + '%', barPct: overall, barColor: overall >= 75 ? '#10b981' : '#ef4444', iconBg: '#eef2ff' }),
+      h(StatCard, { icon: 'fa-calendar-alt', label: 'Total Classes', value: totalClasses, barPct: 100, barColor: '#4f46e5', iconBg: '#eef2ff' }),
+      h(StatCard, { icon: 'fa-check-circle', label: 'Classes Attended', value: attended, barPct: Math.round(attended/totalClasses*100), barColor: '#10b981', iconBg: '#d1fae5' }),
+      h(StatCard, { icon: 'fa-exclamation-triangle', label: 'Low Attendance Subjects', value: lowCount, barPct: Math.round(lowCount/SUBJECTS.length*100), barColor: '#ef4444', iconBg: '#fee2e2' }),
+    ),
+    h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 300px', gap: 16 } },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, 'Weekly Attendance'), h('span', { style: { fontSize: 12, color: 'var(--text3)' } }, 'This Week')),
+        h('div', { className: 'card-body-custom' }, h(WeeklyChart))
+      ),
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, "Today's Schedule"), h('span', { className: 'badge-custom badge-primary' }, SCHEDULE.length + ' classes')),
+        h('div', { className: 'card-body-custom', style: { padding: '0 1.25rem' } },
+          SCHEDULE.map((s, i) => h('div', { key: i, className: 'schedule-item' },
+            h('div', { className: 'schedule-time' }, s.time),
+            h('div', { className: 'schedule-dot', style: { background: s.color } }),
+            h('div', { className: 'schedule-info' },
+              h('h6', null, s.subject),
+              h('p', null, s.room)
+            )
+          ))
+        )
+      ),
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, 'Notifications'), h('span', { className: 'badge-custom badge-danger' }, NOTIFICATIONS.length)),
+        h('div', { className: 'card-body-custom' },
+          NOTIFICATIONS.map((n, i) => h('div', { key: i, className: 'notif-item' },
+            h('div', { className: 'notif-icon', style: { background: n.bg } }, h('i', { className: 'fas ' + n.icon, style: { color: n.color, fontSize: 14 } })),
+            h('div', null,
+              h('div', { className: 'notif-text' }, n.msg),
+              h('div', { className: 'notif-time' }, n.time)
+            )
+          ))
+        )
+      )
+    )
+  );
+}
+
+function MarkAttendance() {
+  const [cls, setCls] = useState('CSE-A');
+  const [subject, setSubject] = useState('1');
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const classStudents = STUDENTS.filter(s => s.class === cls);
+  const [status, setStatus] = useState({});
+  useEffect(() => {
+    const init = {};
+    classStudents.forEach(s => init[s.id] = 'present');
+    setStatus(init);
+    setSubmitted(false);
+  }, [cls, subject]);
+  function toggle(id) { setStatus(p => ({ ...p, [id]: p[id] === 'present' ? 'absent' : 'present' })); }
+  function markAll(val) { const r = {}; classStudents.forEach(s => r[s.id] = val); setStatus(r); }
+  function submit() {
+    setLoading(true);
+    setTimeout(() => { setLoading(false); setSubmitted(true); showToast('Attendance submitted successfully!', 'success'); }, 1500);
+  }
+  const presentCount = Object.values(status).filter(v => v === 'present').length;
+  return h('div', null,
+    h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' } },
+      h('div', null,
+        h('h5', { style: { fontWeight: 700, color: 'var(--text)', margin: 0 } }, 'Mark Attendance'),
+        h('p', { style: { fontSize: 13, color: 'var(--text3)', margin: 0 } }, new Date().toDateString())
+      ),
+      submitted && h('span', { className: 'badge-custom badge-success', style: { fontSize: 13 } },
+        h('i', { className: 'fas fa-check-circle', style: { marginRight: 5 } }), 'Submitted'
+      )
+    ),
+    h('div', { className: 'card', style: { marginBottom: '1.25rem' } },
+      h('div', { className: 'card-body-custom' },
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 } },
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Select Class'),
+            h('select', { className: 'form-control-custom', value: cls, onChange: e => setCls(e.target.value) },
+              ['CSE-A', 'CSE-B'].map(c => h('option', { key: c }, c))
+            )
+          ),
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Select Subject'),
+            h('select', { className: 'form-control-custom', value: subject, onChange: e => setSubject(e.target.value) },
+              SUBJECTS.map(s => h('option', { key: s.id, value: s.id }, s.name))
+            )
+          )
+        )
+      )
+    ),
+    h('div', { className: 'card' },
+      h('div', { className: 'card-header-custom' },
+        h('div', null,
+          h('h6', { style: { margin: 0 } }, cls + ' — ' + (SUBJECTS.find(s => s.id == subject)?.name || '')),
+          h('span', { style: { fontSize: 12, color: 'var(--text3)' } }, presentCount + '/' + classStudents.length + ' present')
+        ),
+        h('div', { style: { display: 'flex', gap: 8 } },
+          h('button', { className: 'btn-secondary-custom', onClick: () => markAll('present'), style: { padding: '.4rem .9rem', fontSize: 12.5 } },
+            h('i', { className: 'fas fa-check-double' }), ' All Present'
+          ),
+          h('button', { className: 'btn-secondary-custom', onClick: () => markAll('absent'), style: { padding: '.4rem .9rem', fontSize: 12.5 } },
+            h('i', { className: 'fas fa-times' }), ' All Absent'
+          )
+        )
+      ),
+      h('div', { style: { overflowX: 'auto' } },
+        h('table', { className: 'table-custom' },
+          h('thead', null,
+            h('tr', null,
+              h('th', null, '#'), h('th', null, 'Student'), h('th', null, 'Roll Number'), h('th', null, 'Status'), h('th', null, 'Toggle')
+            )
+          ),
+          h('tbody', null,
+            classStudents.map((s, i) => h('tr', { key: s.id },
+              h('td', null, h('span', { style: { color: 'var(--text3)', fontWeight: 600 } }, i + 1)),
+              h('td', null,
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                  h('div', { className: 'avatar sm', style: { background: COLORS[i % COLORS.length] } }, s.photo),
+                  h('span', { style: { fontWeight: 600, color: 'var(--text)' } }, s.name)
+                )
+              ),
+              h('td', null, h('code', { style: { fontSize: 12, color: 'var(--text2)', background: 'var(--surface2)', padding: '2px 8px', borderRadius: 4 } }, s.roll)),
+              h('td', null, h('span', { className: 'badge-custom ' + (status[s.id] === 'present' ? 'badge-success' : 'badge-danger') }, status[s.id] === 'present' ? 'Present' : 'Absent')),
+              h('td', null,
+                h('div', { className: 'att-toggle' },
+                  h('span', { className: status[s.id] === 'present' ? 'att-present' : '', onClick: () => { if (status[s.id] !== 'present') toggle(s.id); }, style: { color: status[s.id] === 'present' ? undefined : 'var(--text3)' } }, 'P'),
+                  h('span', { className: status[s.id] === 'absent' ? 'att-absent' : '', onClick: () => { if (status[s.id] !== 'absent') toggle(s.id); }, style: { color: status[s.id] === 'absent' ? undefined : 'var(--text3)' } }, 'A'),
+                )
+              )
+            ))
+          )
+        )
+      ),
+      h('div', { style: { padding: '1rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end', gap: 10 } },
+        h('button', { className: 'btn-primary-custom', onClick: submit, disabled: loading || submitted },
+          loading ? h('span', { className: 'spinner' }) : h('i', { className: 'fas fa-paper-plane' }),
+          loading ? ' Submitting...' : submitted ? ' Submitted' : ' Submit Attendance'
+        )
+      )
+    )
+  );
+}
+
+function AttendanceReport() {
+  const [view, setView] = useState('table');
+  const [filterSubject, setFilterSubject] = useState('all');
+  const [search, setSearch] = useState('');
+  const generateRows = () => {
+    const rows = [];
+    const dates = ['Apr 01','Apr 02','Apr 03','Apr 07','Apr 08','Apr 09','Apr 10','Apr 11'];
+    dates.forEach(d => SUBJECTS.forEach(s => {
+      const pct = 60 + Math.floor(Math.random() * 40);
+      rows.push({ date: d, subject: s.name, code: s.code, pct, status: pct >= 75 ? 'Present' : 'Absent' });
+    }));
+    return rows;
+  };
+  const [rows] = useState(generateRows);
+  const filtered = rows.filter(r =>
+    (filterSubject === 'all' || r.code === filterSubject) &&
+    (r.subject.toLowerCase().includes(search.toLowerCase()) || r.date.includes(search))
+  );
+  // Calendar data
+  const calDays = Array.from({ length: 30 }, (_, i) => ({ day: i + 1, status: Math.random() > .2 ? 'present' : 'absent' }));
+  const firstDay = new Date(2025, 3, 1).getDay();
+  const empties = Array(firstDay).fill(null);
+  return h('div', null,
+    h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' } },
+      h('div', null,
+        h('h5', { style: { fontWeight: 700, color: 'var(--text)', margin: 0 } }, 'Attendance Report'),
+        h('p', { style: { fontSize: 13, color: 'var(--text3)', margin: 0 } }, filtered.length + ' records found')
+      ),
+      h('div', { style: { display: 'flex', gap: 8 } },
+        h('button', { className: 'btn-secondary-custom', onClick: () => showToast('Export started!', 'info') },
+          h('i', { className: 'fas fa-download' }), ' Export'
+        ),
+        h('div', { style: { display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)' } },
+          h('button', { style: { padding: '.45rem .9rem', background: view === 'table' ? 'var(--primary)' : 'var(--surface)', color: view === 'table' ? '#fff' : 'var(--text2)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }, onClick: () => setView('table') }, h('i', { className: 'fas fa-table' }), ' Table'),
+          h('button', { style: { padding: '.45rem .9rem', background: view === 'calendar' ? 'var(--primary)' : 'var(--surface)', color: view === 'calendar' ? '#fff' : 'var(--text2)', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }, onClick: () => setView('calendar') }, h('i', { className: 'fas fa-calendar' }), ' Calendar'),
+        )
+      )
+    ),
+    h('div', { className: 'card', style: { marginBottom: '1.25rem' } },
+      h('div', { className: 'card-body-custom' },
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 200px', gap: 12 } },
+          h('div', { className: 'search-box' },
+            h('i', { className: 'fas fa-search search-icon' }),
+            h('input', { className: 'form-control-custom', placeholder: 'Search subject or date...', value: search, onChange: e => setSearch(e.target.value), style: { paddingLeft: '2.2rem' } })
+          ),
+          h('select', { className: 'form-control-custom', value: filterSubject, onChange: e => setFilterSubject(e.target.value) },
+            h('option', { value: 'all' }, 'All Subjects'),
+            SUBJECTS.map(s => h('option', { key: s.id, value: s.code }, s.name))
+          ),
+          h('input', { type: 'date', className: 'form-control-custom' })
+        )
+      )
+    ),
+    view === 'table' ? h('div', { className: 'card' },
+      h('div', { style: { overflowX: 'auto' } },
+        h('table', { className: 'table-custom' },
+          h('thead', null,
+            h('tr', null, h('th', null, 'Date'), h('th', null, 'Subject'), h('th', null, 'Code'), h('th', null, 'Attendance %'), h('th', null, 'Status'))
+          ),
+          h('tbody', null,
+            filtered.slice(0, 20).map((r, i) => h('tr', { key: i },
+              h('td', null, h('span', { style: { fontWeight: 600, color: 'var(--text)' } }, r.date)),
+              h('td', null, r.subject),
+              h('td', null, h('code', { style: { fontSize: 12, color: 'var(--text2)', background: 'var(--surface2)', padding: '2px 8px', borderRadius: 4 } }, r.code)),
+              h('td', null,
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                  h('div', { className: 'progress-custom', style: { flex: 1 } },
+                    h('div', { className: 'progress-fill', style: { width: r.pct + '%', background: r.pct >= 75 ? '#10b981' : '#ef4444' } })
+                  ),
+                  h('span', { style: { fontSize: 12, fontWeight: 600, color: r.pct >= 75 ? '#10b981' : '#ef4444', minWidth: 32 } }, r.pct + '%')
+                )
+              ),
+              h('td', null, h('span', { className: 'badge-custom ' + (r.status === 'Present' ? 'badge-success' : 'badge-danger') }, r.status))
+            ))
+          )
+        )
+      )
+    ) : h('div', { className: 'card' },
+      h('div', { className: 'card-body-custom' },
+        h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' } },
+          h('h6', { style: { margin: 0, fontWeight: 700 } }, 'April 2025'),
+          h('div', { style: { display: 'flex', gap: 12, fontSize: 12 } },
+            h('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, h('span', { style: { width: 12, height: 12, borderRadius: 3, background: '#d1fae5', display: 'inline-block', border: '1px solid #10b981' } }), 'Present'),
+            h('span', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, h('span', { style: { width: 12, height: 12, borderRadius: 3, background: '#fee2e2', display: 'inline-block', border: '1px solid #ef4444' } }), 'Absent'),
+          )
+        ),
+        h('div', { className: 'cal-grid', style: { marginBottom: 8 } },
+          ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => h('div', { key: d, style: { textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text3)', padding: '4px 0' } }, d))
+        ),
+        h('div', { className: 'cal-grid' },
+          empties.map((_, i) => h('div', { key: 'e' + i, className: 'cal-cell empty' })),
+          calDays.map(d => h('div', { key: d.day, className: 'cal-cell ' + d.status + (d.day === 13 ? ' today' : '') }, d.day))
+        )
+      )
+    )
+  );
+}
+
+function StudentView({ studentId }) {
+  const student = STUDENTS.find(s => s.id === studentId) || STUDENTS[0];
+  const attPcts = SUBJECTS.map(s => {
+    const a = ATTENDANCE_DATA[student.id]?.[s.id] || { attended: 0, total: 1 };
+    return { pct: Math.round((a.attended / a.total) * 100), ...a };
+  });
+  const overall = Math.round(attPcts.reduce((a,b) => a + b.pct, 0) / attPcts.length);
+  return h('div', null,
+    h('div', { style: { display: 'flex', gap: '1.25rem', marginBottom: '1.5rem', flexWrap: 'wrap' } },
+      h('div', { className: 'card', style: { flex: '0 0 280px' } },
+        h('div', { className: 'card-body-custom', style: { textAlign: 'center' } },
+          h('div', { className: 'avatar xl', style: { margin: '0 auto 1rem', background: '#4f46e5' } }, student.photo),
+          h('h6', { style: { fontWeight: 700, color: 'var(--text)', fontSize: 16 } }, student.name),
+          h('p', { style: { color: 'var(--text3)', fontSize: 13, marginBottom: '.5rem' } }, student.roll),
+          h('span', { className: 'badge-custom badge-primary' }, student.class),
+          h('div', { style: { marginTop: '1.25rem', display: 'flex', justifyContent: 'center' } },
+            h(CircProgress, { pct: overall, size: 100, stroke: 9, color: overall >= 75 ? '#10b981' : '#ef4444' })
+          ),
+          h('p', { style: { fontSize: 12, color: 'var(--text3)', marginTop: '.5rem' } }, 'Overall Attendance'),
+          overall < 75 && h('div', { style: { marginTop: '1rem', background: '#fee2e2', color: '#991b1b', padding: '.6rem', borderRadius: 8, fontSize: 12 } },
+            h('i', { className: 'fas fa-exclamation-triangle', style: { marginRight: 5 } }), 'Attendance below 75%! Risk of debarment.'
+          )
+        )
+      ),
+      h('div', { style: { flex: 1, minWidth: 280 } },
+        h('div', { className: 'card', style: { marginBottom: '1rem' } },
+          h('div', { className: 'card-header-custom' }, h('h6', null, 'Subject-wise Breakdown'), h('span', { style: { fontSize: 12, color: 'var(--text3)' } }, SUBJECTS.length + ' subjects')),
+          h('div', { className: 'card-body-custom' },
+            SUBJECTS.map((s, i) => h('div', { key: s.id, style: { marginBottom: '1rem' } },
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: 6 } },
+                h('div', null,
+                  h('span', { style: { fontSize: 13.5, fontWeight: 600, color: 'var(--text)' } }, s.name),
+                  h('span', { style: { fontSize: 11, color: 'var(--text3)', marginLeft: 8 } }, attPcts[i].attended + '/' + attPcts[i].total + ' classes')
+                ),
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+                  h('span', { style: { fontSize: 13, fontWeight: 700, color: attPcts[i].pct >= 75 ? '#10b981' : '#ef4444' } }, attPcts[i].pct + '%'),
+                  attPcts[i].pct < 75 && h('i', { className: 'fas fa-exclamation-triangle', style: { color: '#ef4444', fontSize: 12 } })
+                )
+              ),
+              h('div', { className: 'progress-custom' },
+                h('div', { className: 'progress-fill', style: { width: attPcts[i].pct + '%', background: COLORS[i % COLORS.length] } })
+              )
+            ))
+          )
+        )
+      ),
+      h('div', { style: { flex: '0 0 240px' } },
+        h('div', { className: 'card' },
+          h('div', { className: 'card-header-custom' }, h('h6', null, 'Subject Distribution')),
+          h('div', { className: 'card-body-custom' },
+            h(SubjectDonut, { studentId: student.id }),
+            h('div', { style: { marginTop: '1rem' } },
+              SUBJECTS.map((s, i) => h('div', { key: s.id, style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 } },
+                h('div', { style: { width: 8, height: 8, borderRadius: 2, background: COLORS[i % COLORS.length], flexShrink: 0 } }),
+                h('span', { style: { fontSize: 12, color: 'var(--text2)', flex: 1 } }, s.name.split(' ')[0]),
+                h('span', { style: { fontSize: 12, fontWeight: 700, color: 'var(--text)' } }, attPcts[i].pct + '%')
+              ))
+            )
+          )
+        )
+      )
+    )
+  );
+}
+
+function AdminPanel() {
+  const [students, setStudents] = useState(STUDENTS);
+  const [subjects, setSubjects] = useState(SUBJECTS);
+  const [tab, setTab] = useState('students');
+  const [search, setSearch] = useState('');
+  const [newSt, setNewSt] = useState({ name: '', roll: '', class: 'CSE-A', email: '' });
+  const [newSub, setNewSub] = useState({ name: '', code: '', credits: 3, teacher: '' });
+  function addStudent() {
+    if (!newSt.name || !newSt.roll) { showToast('Fill all required fields', 'error'); return; }
+    const st = { ...newSt, id: Date.now(), photo: newSt.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2) };
+    setStudents(p => [...p, st]);
+    setNewSt({ name: '', roll: '', class: 'CSE-A', email: '' });
+    showToast('Student added successfully!', 'success');
+  }
+  function removeStudent(id) { setStudents(p => p.filter(s => s.id !== id)); showToast('Student removed', 'info'); }
+  function addSubject() {
+    if (!newSub.name || !newSub.code) { showToast('Fill all required fields', 'error'); return; }
+    setSubjects(p => [...p, { ...newSub, id: Date.now() }]);
+    setNewSub({ name: '', code: '', credits: 3, teacher: '' });
+    showToast('Subject added!', 'success');
+  }
+  const filteredSt = students.filter(s => s.name.toLowerCase().includes(search.toLowerCase()) || s.roll.includes(search));
+  return h('div', null,
+    h('div', { style: { marginBottom: '1.25rem' } },
+      h('h5', { style: { fontWeight: 700, color: 'var(--text)', margin: 0 } }, 'Admin Panel'),
+      h('p', { style: { fontSize: 13, color: 'var(--text3)', margin: 0 } }, 'Manage students, subjects, and assignments')
+    ),
+    h('div', { style: { display: 'flex', gap: 0, marginBottom: '1.25rem', borderBottom: '1px solid var(--border)' } },
+      ['students', 'subjects'].map(t =>
+        h('button', { key: t, onClick: () => setTab(t), style: { padding: '.6rem 1.25rem', background: 'none', border: 'none', borderBottom: tab === t ? '2px solid var(--primary)' : '2px solid transparent', color: tab === t ? 'var(--primary)' : 'var(--text2)', fontWeight: 600, fontSize: 13.5, cursor: 'pointer', transition: 'all .2s', marginBottom: -1 } },
+          h('i', { className: 'fas ' + (t === 'students' ? 'fa-users' : 'fa-book'), style: { marginRight: 6 } }), t.charAt(0).toUpperCase() + t.slice(1)
+        )
+      )
+    ),
+    tab === 'students' ? h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.25rem' } },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' },
+          h('h6', null, 'Student List (' + filteredSt.length + ')'),
+          h('div', { className: 'search-box', style: { width: 220 } },
+            h('i', { className: 'fas fa-search search-icon' }),
+            h('input', { className: 'form-control-custom', placeholder: 'Search...', value: search, onChange: e => setSearch(e.target.value), style: { paddingLeft: '2.2rem' } })
+          )
+        ),
+        h('div', { style: { overflowX: 'auto' } },
+          h('table', { className: 'table-custom' },
+            h('thead', null,
+              h('tr', null, h('th', null, 'Student'), h('th', null, 'Roll'), h('th', null, 'Class'), h('th', null, 'Email'), h('th', null, 'Action'))
+            ),
+            h('tbody', null,
+              filteredSt.map((s, i) => h('tr', { key: s.id },
+                h('td', null,
+                  h('div', { style: { display: 'flex', alignItems: 'center', gap: 10 } },
+                    h('div', { className: 'avatar sm', style: { background: COLORS[i % COLORS.length] } }, s.photo),
+                    h('span', { style: { fontWeight: 600, color: 'var(--text)' } }, s.name)
+                  )
+                ),
+                h('td', null, h('code', { style: { fontSize: 12, color: 'var(--text2)', background: 'var(--surface2)', padding: '2px 8px', borderRadius: 4 } }, s.roll)),
+                h('td', null, h('span', { className: 'badge-custom badge-info' }, s.class)),
+                h('td', null, h('span', { style: { color: 'var(--text3)', fontSize: 12.5 } }, s.email || '—')),
+                h('td', null, h('button', { className: 'btn-danger-custom', onClick: () => removeStudent(s.id), style: { padding: '.3rem .7rem', fontSize: 12 } }, h('i', { className: 'fas fa-trash' })))
+              ))
+            )
+          )
+        )
+      ),
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, 'Add New Student')),
+        h('div', { className: 'card-body-custom' },
+          ['Name', 'Roll Number', 'Email'].map((f, i) =>
+            h('div', { key: f, style: { marginBottom: '1rem' } },
+              h('label', { className: 'form-label-custom' }, f + (i < 2 ? ' *' : '')),
+              h('input', { className: 'form-control-custom', placeholder: 'Enter ' + f.toLowerCase(), value: Object.values(newSt)[i], onChange: e => setNewSt(p => ({ ...p, [Object.keys(p)[i]]: e.target.value })) })
+            )
+          ),
+          h('div', { style: { marginBottom: '1.25rem' } },
+            h('label', { className: 'form-label-custom' }, 'Class *'),
+            h('select', { className: 'form-control-custom', value: newSt.class, onChange: e => setNewSt(p => ({ ...p, class: e.target.value })) },
+              ['CSE-A', 'CSE-B'].map(c => h('option', { key: c }, c))
+            )
+          ),
+          h('button', { className: 'btn-primary-custom', style: { width: '100%', justifyContent: 'center' }, onClick: addStudent },
+            h('i', { className: 'fas fa-user-plus' }), ' Add Student'
+          )
+        )
+      )
+    ) : h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 320px', gap: '1.25rem' } },
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, 'Subject List (' + subjects.length + ')')),
+        h('table', { className: 'table-custom' },
+          h('thead', null,
+            h('tr', null, h('th', null, 'Subject'), h('th', null, 'Code'), h('th', null, 'Credits'), h('th', null, 'Teacher'))
+          ),
+          h('tbody', null,
+            subjects.map((s, i) => h('tr', { key: s.id },
+              h('td', null, h('span', { style: { fontWeight: 600, color: 'var(--text)' } }, s.name)),
+              h('td', null, h('code', { style: { fontSize: 12, color: 'var(--text2)', background: 'var(--surface2)', padding: '2px 8px', borderRadius: 4 } }, s.code)),
+              h('td', null, h('span', { className: 'badge-custom badge-primary' }, s.credits + ' cr')),
+              h('td', null, s.teacher)
+            ))
+          )
+        )
+      ),
+      h('div', { className: 'card' },
+        h('div', { className: 'card-header-custom' }, h('h6', null, 'Add Subject')),
+        h('div', { className: 'card-body-custom' },
+          [['Subject Name', 'name'], ['Subject Code', 'code'], ['Teacher', 'teacher']].map(([lbl, key]) =>
+            h('div', { key: key, style: { marginBottom: '1rem' } },
+              h('label', { className: 'form-label-custom' }, lbl),
+              h('input', { className: 'form-control-custom', placeholder: 'Enter ' + lbl.toLowerCase(), value: newSub[key], onChange: e => setNewSub(p => ({ ...p, [key]: e.target.value })) })
+            )
+          ),
+          h('div', { style: { marginBottom: '1.25rem' } },
+            h('label', { className: 'form-label-custom' }, 'Credits'),
+            h('select', { className: 'form-control-custom', value: newSub.credits, onChange: e => setNewSub(p => ({ ...p, credits: Number(e.target.value) })) },
+              [1,2,3,4].map(c => h('option', { key: c, value: c }, c + ' Credits'))
+            )
+          ),
+          h('button', { className: 'btn-primary-custom', style: { width: '100%', justifyContent: 'center' }, onClick: addSubject },
+            h('i', { className: 'fas fa-plus' }), ' Add Subject'
+          )
+        )
+      )
+    )
+  );
+}
+
+function ProfilePage({ role }) {
+  const user = USERS[role];
+  const [form, setForm] = useState({ name: user.name, email: user.email, phone: '9876543200', dept: 'Computer Science', bio: 'Passionate about education and technology.' });
+  const [saving, setSaving] = useState(false);
+  function save() {
+    setSaving(true);
+    setTimeout(() => { setSaving(false); showToast('Profile updated successfully!', 'success'); }, 1000);
+  }
+  return h('div', { style: { maxWidth: 700 } },
+    h('h5', { style: { fontWeight: 700, color: 'var(--text)', marginBottom: '1.5rem' } }, 'My Profile'),
+    h('div', { className: 'card', style: { marginBottom: '1.25rem' } },
+      h('div', { className: 'card-body-custom' },
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: '1.5rem' } },
+          h('div', { className: 'avatar xl', style: { background: '#4f46e5' } }, user.initials),
+          h('div', null,
+            h('h5', { style: { fontWeight: 700, color: 'var(--text)', marginBottom: 4 } }, form.name),
+            h('p', { style: { color: 'var(--text3)', fontSize: 13, marginBottom: '.5rem' } }, user.role + ' — ' + form.dept),
+            h('span', { className: 'badge-custom badge-success' }, h('i', { className: 'fas fa-circle', style: { fontSize: 8, marginRight: 5 } }), 'Active')
+          )
+        )
+      )
+    ),
+    h('div', { className: 'card' },
+      h('div', { className: 'card-header-custom' }, h('h6', null, 'Edit Profile')),
+      h('div', { className: 'card-body-custom' },
+        h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' } },
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Full Name'),
+            h('input', { className: 'form-control-custom', value: form.name, onChange: e => setForm(p => ({ ...p, name: e.target.value })) })
+          ),
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Email'),
+            h('input', { className: 'form-control-custom', value: form.email, onChange: e => setForm(p => ({ ...p, email: e.target.value })) })
+          ),
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Phone'),
+            h('input', { className: 'form-control-custom', value: form.phone, onChange: e => setForm(p => ({ ...p, phone: e.target.value })) })
+          ),
+          h('div', null,
+            h('label', { className: 'form-label-custom' }, 'Department'),
+            h('input', { className: 'form-control-custom', value: form.dept, onChange: e => setForm(p => ({ ...p, dept: e.target.value })) })
+          )
+        ),
+        h('div', { style: { marginBottom: '1.25rem' } },
+          h('label', { className: 'form-label-custom' }, 'Bio'),
+          h('textarea', { className: 'form-control-custom', rows: 3, value: form.bio, onChange: e => setForm(p => ({ ...p, bio: e.target.value })) })
+        ),
+        h('div', { style: { display: 'flex', gap: 10 } },
+          h('button', { className: 'btn-primary-custom', onClick: save, disabled: saving },
+            saving ? h('span', { className: 'spinner' }) : h('i', { className: 'fas fa-save' }),
+            saving ? ' Saving...' : ' Save Changes'
+          ),
+          h('button', { className: 'btn-secondary-custom', onClick: () => setForm({ name: user.name, email: user.email, phone: '9876543200', dept: 'Computer Science', bio: 'Passionate about education and technology.' }) },
+            h('i', { className: 'fas fa-undo' }), ' Reset'
+          )
+        )
+      )
+    )
+  );
+}
+
+/* ─── SIDEBAR ─── */
+function Sidebar({ role, page, setPage, collapsed }) {
+  const teacherAdmin = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'fa-home' },
+    { id: 'mark', label: 'Mark Attendance', icon: 'fa-check-square', badge: '1' },
+    { id: 'report', label: 'Reports', icon: 'fa-chart-bar' },
+    { id: 'students', label: 'Students', icon: 'fa-users' },
+  ];
+  const studentNav = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'fa-home' },
+    { id: 'myAttendance', label: 'My Attendance', icon: 'fa-calendar-check' },
+    { id: 'report', label: 'Reports', icon: 'fa-chart-bar' },
+  ];
+  const commonNav = [
+    { id: 'profile', label: 'Profile', icon: 'fa-user' },
+  ];
+  if (role === 'admin') teacherAdmin.push({ id: 'admin', label: 'Admin Panel', icon: 'fa-cog', badge: 'new', badgeType: 'success' });
+  const nav = role === 'student' ? studentNav : teacherAdmin;
+  return h('div', { id: 'sidebar', className: collapsed ? 'collapsed' : '' },
+    h('div', { className: 'sidebar-brand' },
+      h('div', { className: 'brand-logo' },
+        h('div', { className: 'brand-icon' }, h('i', { className: 'fas fa-graduation-cap' })),
+        h('div', null,
+          h('div', { className: 'brand-name' }, 'EduTrack'),
+          h('div', { className: 'brand-sub' }, 'ERP System')
+        )
+      )
+    ),
+    h('div', { className: 'nav-section' },
+      h('div', { className: 'nav-label' }, 'Main Navigation'),
+      nav.map(item =>
+        h('div', { key: item.id, className: 'nav-item' + (page === item.id ? ' active' : ''), onClick: () => setPage(item.id) },
+          h('i', { className: 'fas ' + item.icon + ' icon' }),
+          h('span', null, item.label),
+          item.badge && h('span', { className: 'badge' + (item.badgeType ? ' ' + item.badgeType : '') }, item.badge)
+        )
+      )
+    ),
+    h('div', { className: 'nav-section' },
+      h('div', { className: 'nav-label' }, 'Account'),
+      commonNav.map(item =>
+        h('div', { key: item.id, className: 'nav-item' + (page === item.id ? ' active' : ''), onClick: () => setPage(item.id) },
+          h('i', { className: 'fas ' + item.icon + ' icon' }),
+          h('span', null, item.label)
+        )
+      )
+    ),
+    h('div', { className: 'sidebar-footer' },
+      h('div', { className: 'user-mini' },
+        h('div', { className: 'avatar', style: { background: '#4f46e5' } }, USERS[role].initials),
+        h('div', { style: { flex: 1, minWidth: 0 } },
+          h('div', { style: { fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, USERS[role].name),
+          h('div', { style: { fontSize: 11, color: 'var(--text3)', textTransform: 'capitalize' } }, USERS[role].role)
+        )
+      )
+    )
+  );
+}
+
+/* ─── TOPBAR ─── */
+function Topbar({ page, role, onToggleSidebar, onLogout, dark, onToggleDark }) {
+  const labels = { dashboard: 'Dashboard', mark: 'Mark Attendance', report: 'Attendance Report', myAttendance: 'My Attendance', admin: 'Admin Panel', profile: 'Profile', students: 'Students' };
+  return h('div', { id: 'topbar' },
+    h('button', { className: 'topbar-toggle', onClick: onToggleSidebar }, h('i', { className: 'fas fa-bars' })),
+    h('div', { className: 'breadcrumb-bar' },
+      h('div', { className: 'page-title' }, labels[page] || 'Dashboard'),
+      h('div', { className: 'page-sub' }, 'EduTrack — ' + role.charAt(0).toUpperCase() + role.slice(1) + ' Portal')
+    ),
+    h('div', { className: 'topbar-actions' },
+      h('div', { className: 'icon-btn', style: { position: 'relative' } },
+        h('i', { className: 'fas fa-bell' }),
+        h('div', { className: 'notif-dot' })
+      ),
+      h('div', { style: { display: 'flex', alignItems: 'center', gap: 8 } },
+        h('i', { className: 'fas ' + (dark ? 'fa-sun' : 'fa-moon'), style: { fontSize: 13, color: 'var(--text3)' } }),
+        h('label', { className: 'toggle-switch' },
+          h('input', { type: 'checkbox', checked: dark, onChange: onToggleDark }),
+          h('div', { className: 'toggle-track' }),
+          h('div', { className: 'toggle-thumb' })
+        )
+      ),
+      h('div', { className: 'avatar sm', style: { background: '#4f46e5', cursor: 'pointer' } }, USERS[role].initials),
+      h('button', { className: 'icon-btn', onClick: onLogout, title: 'Logout' }, h('i', { className: 'fas fa-sign-out-alt' }))
+    )
+  );
+}
+
+/* ─── APP ROOT ─── */
+function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [role, setRole] = useState('student');
+  const [page, setPage] = useState('dashboard');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [dark, setDark] = useState(false);
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  }, [dark]);
+  function handleLogin(r) { setRole(r); setLoggedIn(true); setPage('dashboard'); showToast('Welcome! Logged in as ' + r, 'success'); }
+  function handleLogout() { setLoggedIn(false); setPage('dashboard'); showToast('Logged out successfully', 'info'); }
+  function renderPage() {
+    switch(page) {
+      case 'dashboard': return h(Dashboard, { role, userId: 1 });
+      case 'mark': return h(MarkAttendance);
+      case 'report': return h(AttendanceReport);
+      case 'myAttendance': return h(StudentView, { studentId: 1 });
+      case 'students': return h(StudentView, { studentId: 1 });
+      case 'admin': return h(AdminPanel);
+      case 'profile': return h(ProfilePage, { role });
+      default: return h(Dashboard, { role, userId: 1 });
+    }
+  }
+  if (!loggedIn) return h(LoginPage, { onLogin: handleLogin });
+  return h('div', { id: 'app-shell' },
+    h(Sidebar, { role, page, setPage, collapsed: sidebarCollapsed }),
+    h('div', { id: 'main', className: sidebarCollapsed ? 'expanded' : '' },
+      h(Topbar, { page, role, onToggleSidebar: () => setSidebarCollapsed(p => !p), onLogout: handleLogout, dark, onToggleDark: () => setDark(p => !p) }),
+      h('div', { id: 'content' }, renderPage())
+    )
+  );
+}
+
+ReactDOM.render(h(App), document.getElementById('root'));
+</script>
+</body>
+</html>
